@@ -2,9 +2,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,76 +27,78 @@ import edu.berkeley.ground.api.versions.postgres.PostgresVersionSuccessorFactory
 import edu.berkeley.ground.db.PostgresClient;
 
 public class PostgresFactories {
-    private PostgresStructureFactory structureFactory;
-    private PostgresStructureVersionFactory structureVersionFactory;
-    private PostgresEdgeFactory edgeFactory;
-    private PostgresEdgeVersionFactory edgeVersionFactory;
-    private PostgresGraphFactory graphFactory;
-    private PostgresGraphVersionFactory graphVersionFactory;
-    private PostgresNodeFactory nodeFactory;
-    private PostgresNodeVersionFactory nodeVersionFactory;
+  private PostgresStructureFactory structureFactory;
+  private PostgresStructureVersionFactory structureVersionFactory;
+  private PostgresEdgeFactory edgeFactory;
+  private PostgresEdgeVersionFactory edgeVersionFactory;
+  private PostgresGraphFactory graphFactory;
+  private PostgresGraphVersionFactory graphVersionFactory;
+  private PostgresNodeFactory nodeFactory;
+  private PostgresNodeVersionFactory nodeVersionFactory;
 
-    private PostgresLineageEdgeFactory lineageEdgeFactory;
-    private PostgresLineageEdgeVersionFactory lineageEdgeVersionFactory;
+  private PostgresLineageEdgeFactory lineageEdgeFactory;
+  private PostgresLineageEdgeVersionFactory lineageEdgeVersionFactory;
 
-    public PostgresFactories(PostgresClient postgresClient) {
-        PostgresVersionFactory versionFactory = new PostgresVersionFactory();
-        PostgresVersionSuccessorFactory versionSuccessorFactory = new PostgresVersionSuccessorFactory();
-        PostgresVersionHistoryDAGFactory versionHistoryDAGFactory = new PostgresVersionHistoryDAGFactory(versionSuccessorFactory);
-        PostgresItemFactory itemFactory = new PostgresItemFactory(versionHistoryDAGFactory);
+  public PostgresFactories(PostgresClient postgresClient, int machineId, int numMachines) {
+    IdGenerator idGenerator = new IdGenerator(machineId, numMachines, false);
 
-        this.structureFactory = new PostgresStructureFactory(itemFactory, postgresClient);
-        this.structureVersionFactory = new PostgresStructureVersionFactory(this.structureFactory, versionFactory, postgresClient);
-        PostgresTagFactory tagFactory = new PostgresTagFactory();
-        PostgresRichVersionFactory richVersionFactory = new PostgresRichVersionFactory(versionFactory, structureVersionFactory, tagFactory);
-        this.edgeFactory = new PostgresEdgeFactory(itemFactory, postgresClient);
-        this.edgeVersionFactory = new PostgresEdgeVersionFactory(this.edgeFactory, richVersionFactory, postgresClient);
-        this.graphFactory = new PostgresGraphFactory(itemFactory, postgresClient);
-        this.graphVersionFactory = new PostgresGraphVersionFactory(this.graphFactory, richVersionFactory, postgresClient);
-        this.nodeFactory = new PostgresNodeFactory(itemFactory, postgresClient);
-        this.nodeVersionFactory = new PostgresNodeVersionFactory(this.nodeFactory, richVersionFactory, postgresClient);
+    PostgresVersionFactory versionFactory = new PostgresVersionFactory();
+    PostgresVersionSuccessorFactory versionSuccessorFactory = new PostgresVersionSuccessorFactory(idGenerator);
+    PostgresVersionHistoryDAGFactory versionHistoryDAGFactory = new PostgresVersionHistoryDAGFactory(versionSuccessorFactory);
+    PostgresItemFactory itemFactory = new PostgresItemFactory(versionHistoryDAGFactory);
 
-        this.lineageEdgeFactory = new PostgresLineageEdgeFactory(itemFactory, postgresClient);
-        this.lineageEdgeVersionFactory = new PostgresLineageEdgeVersionFactory(this.lineageEdgeFactory, richVersionFactory, postgresClient);
-    }
+    this.structureFactory = new PostgresStructureFactory(itemFactory, postgresClient, idGenerator);
+    this.structureVersionFactory = new PostgresStructureVersionFactory(this.structureFactory, versionFactory, postgresClient, idGenerator);
+    PostgresTagFactory tagFactory = new PostgresTagFactory();
+    PostgresRichVersionFactory richVersionFactory = new PostgresRichVersionFactory(versionFactory, structureVersionFactory, tagFactory);
+    this.edgeFactory = new PostgresEdgeFactory(itemFactory, postgresClient, idGenerator);
+    this.edgeVersionFactory = new PostgresEdgeVersionFactory(this.edgeFactory, richVersionFactory, postgresClient, idGenerator);
+    this.graphFactory = new PostgresGraphFactory(itemFactory, postgresClient, idGenerator);
+    this.graphVersionFactory = new PostgresGraphVersionFactory(this.graphFactory, richVersionFactory, postgresClient, idGenerator);
+    this.nodeFactory = new PostgresNodeFactory(itemFactory, postgresClient, idGenerator);
+    this.nodeVersionFactory = new PostgresNodeVersionFactory(this.nodeFactory, richVersionFactory, postgresClient, idGenerator);
 
-    public EdgeFactory getEdgeFactory() {
-        return edgeFactory;
-    }
+    this.lineageEdgeFactory = new PostgresLineageEdgeFactory(itemFactory, postgresClient, idGenerator);
+    this.lineageEdgeVersionFactory = new PostgresLineageEdgeVersionFactory(this.lineageEdgeFactory, richVersionFactory, postgresClient, idGenerator);
+  }
 
-    public EdgeVersionFactory getEdgeVersionFactory() {
-        return edgeVersionFactory;
-    }
+  public EdgeFactory getEdgeFactory() {
+    return edgeFactory;
+  }
 
-    public GraphFactory getGraphFactory() {
-        return graphFactory;
-    }
+  public EdgeVersionFactory getEdgeVersionFactory() {
+    return edgeVersionFactory;
+  }
 
-    public GraphVersionFactory getGraphVersionFactory() {
-        return graphVersionFactory;
-    }
+  public GraphFactory getGraphFactory() {
+    return graphFactory;
+  }
 
-    public NodeFactory getNodeFactory() {
-        return nodeFactory;
-    }
+  public GraphVersionFactory getGraphVersionFactory() {
+    return graphVersionFactory;
+  }
 
-    public NodeVersionFactory getNodeVersionFactory() {
-        return nodeVersionFactory;
-    }
+  public NodeFactory getNodeFactory() {
+    return nodeFactory;
+  }
 
-    public LineageEdgeFactory getLineageEdgeFactory() {
-        return lineageEdgeFactory;
-    }
+  public NodeVersionFactory getNodeVersionFactory() {
+    return nodeVersionFactory;
+  }
 
-    public LineageEdgeVersionFactory getLineageEdgeVersionFactory() {
-        return lineageEdgeVersionFactory;
-    }
+  public LineageEdgeFactory getLineageEdgeFactory() {
+    return lineageEdgeFactory;
+  }
 
-    public StructureFactory getStructureFactory() {
-        return structureFactory;
-    }
+  public LineageEdgeVersionFactory getLineageEdgeVersionFactory() {
+    return lineageEdgeVersionFactory;
+  }
 
-    public StructureVersionFactory getStructureVersionFactory() {
-        return structureVersionFactory;
-    }
+  public StructureFactory getStructureFactory() {
+    return structureFactory;
+  }
+
+  public StructureVersionFactory getStructureVersionFactory() {
+    return structureVersionFactory;
+  }
 }

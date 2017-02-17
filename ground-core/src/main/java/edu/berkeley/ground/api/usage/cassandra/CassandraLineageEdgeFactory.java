@@ -2,9 +2,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,81 +26,84 @@ import edu.berkeley.ground.db.DbDataContainer;
 import edu.berkeley.ground.db.QueryResults;
 import edu.berkeley.ground.exceptions.EmptyResultException;
 import edu.berkeley.ground.exceptions.GroundException;
+import edu.berkeley.ground.util.IdGenerator;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 public class CassandraLineageEdgeFactory extends LineageEdgeFactory {
-    private static final Logger LOGGER = LoggerFactory.getLogger(CassandraLineageEdgeFactory.class);
-    private CassandraClient dbClient;
+  private static final Logger LOGGER = LoggerFactory.getLogger(CassandraLineageEdgeFactory.class);
+  private CassandraClient dbClient;
+  private CassandraItemFactory itemFactory;
 
-    private CassandraItemFactory itemFactory;
+  private IdGenerator idGenerator;
 
-    public CassandraLineageEdgeFactory(CassandraItemFactory itemFactory, CassandraClient dbClient) {
-        this.dbClient = dbClient;
-        this.itemFactory = itemFactory;
+  public CassandraLineageEdgeFactory(CassandraItemFactory itemFactory, CassandraClient dbClient, IdGenerator idGenerator) {
+    this.dbClient = dbClient;
+    this.itemFactory = itemFactory;
+    this.idGenerator = idGenerator;
+  }
+
+  public LineageEdge create(String name) throws GroundException {
+    CassandraConnection connection = this.dbClient.getConnection();
+
+    try {
+      long uniqueId = this.idGenerator.generateItemId();
+
+      this.itemFactory.insertIntoDatabase(connection, uniqueId);
+
+      List<DbDataContainer> insertions = new ArrayList<>();
+      insertions.add(new DbDataContainer("name", GroundType.STRING, name));
+      insertions.add(new DbDataContainer("item_id", GroundType.LONG, uniqueId));
+
+      connection.insert("lineage_edge", insertions);
+
+      connection.commit();
+      LOGGER.info("Created lineage edge " + name + ".");
+
+      return LineageEdgeFactory.construct(uniqueId, name);
+    } catch (GroundException e) {
+      connection.abort();
+
+      throw e;
     }
+  }
 
-    public LineageEdge create(String name) throws GroundException {
-        CassandraConnection connection = this.dbClient.getConnection();
+  public LineageEdge retrieveFromDatabase(String name) throws GroundException {
+    CassandraConnection connection = this.dbClient.getConnection();
 
-        try {
-            String uniqueId = "LineageEdges." + name;
+    try {
+      List<DbDataContainer> predicates = new ArrayList<>();
+      predicates.add(new DbDataContainer("name", GroundType.STRING, name));
 
-            this.itemFactory.insertIntoDatabase(connection, uniqueId);
+      QueryResults resultSet;
+      try {
+        resultSet = connection.equalitySelect("lineage_edge", DBClient.SELECT_STAR, predicates);
+      } catch (EmptyResultException eer) {
+        throw new GroundException("No LineageEdge found with name " + name + ".");
+      }
 
-            List<DbDataContainer> insertions = new ArrayList<>();
-            insertions.add(new DbDataContainer("name", GroundType.STRING, name));
-            insertions.add(new DbDataContainer("item_id", GroundType.STRING, uniqueId));
+      if (!resultSet.next()) {
+        throw new GroundException("No LineageEdge found with name " + name + ".");
+      }
 
-            connection.insert("LineageEdges", insertions);
+      long id = resultSet.getLong("item_id");
 
-            connection.commit();
-            LOGGER.info("Created lineage edge " + name + ".");
+      connection.commit();
+      LOGGER.info("Retrieved lineage edge " + name + ".");
 
-            return LineageEdgeFactory.construct(uniqueId, name);
-        } catch (GroundException e) {
-            connection.abort();
+      return LineageEdgeFactory.construct(id, name);
+    } catch (GroundException e) {
+      connection.abort();
 
-            throw e;
-        }
+      throw e;
     }
+  }
 
-    public LineageEdge retrieveFromDatabase(String name) throws GroundException {
-        CassandraConnection connection = this.dbClient.getConnection();
-
-        try {
-            List<DbDataContainer> predicates = new ArrayList<>();
-            predicates.add(new DbDataContainer("name", GroundType.STRING, name));
-
-            QueryResults resultSet;
-            try {
-                resultSet = connection.equalitySelect("LineageEdges", DBClient.SELECT_STAR, predicates);
-            } catch (EmptyResultException eer) {
-                throw new GroundException("No LineageEdge found with name " + name + ".");
-            }
-
-            if (!resultSet.next()) {
-                throw new GroundException("No LineageEdge found with name " + name + ".");
-            }
-
-            String id = resultSet.getString("item_id");
-
-            connection.commit();
-            LOGGER.info("Retrieved lineage edge " + name + ".");
-
-            return LineageEdgeFactory.construct(id, name);
-        } catch (GroundException e) {
-            connection.abort();
-
-            throw e;
-        }
-    }
-
-    public void update(GroundDBConnection connection, String itemId, String childId, List<String> parentIds) throws GroundException {
-        this.itemFactory.update(connection, itemId, childId, parentIds);
-    }
+  public void update(GroundDBConnection connection, long itemId, long childId, List<Long> parentIds) throws GroundException {
+    this.itemFactory.update(connection, itemId, childId, parentIds);
+  }
 }

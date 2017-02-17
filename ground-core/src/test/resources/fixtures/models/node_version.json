@@ -1,18 +1,16 @@
 {
-    "id": "abcd",
-    "tags": {
-        "testtag": {
-            "versionId": "abcd",
-            "key": "testtag",
-            "value": "tag",
-            "type": "string"
-        }
-    },
-    
-    "reference": "http://www.google.com",
-    "referenceParameters": {
-        "http": "GET"
-    }, 
-
-    "nodeId": "Nodes.test"
+  "id": 1,
+  "tags": {
+    "testtag": {
+      "versionId": 1,
+      "key": "testtag",
+      "value": "tag",
+      "type": "string"
+    }
+  },
+  "reference": "http://www.google.com",
+  "referenceParameters": {
+    "http": "GET"
+  },
+  "nodeId": 1
 }
